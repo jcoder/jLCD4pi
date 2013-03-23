@@ -9,6 +9,10 @@ public class SerialLCDDisplay implements LCDDisplay {
     protected static final byte CMD_DISPLAY_ON = 0xC;
     protected static final byte CMD_DISPLAY_CLEAR = 0x1;
     protected static final byte CMD_CURSOR_HOME = 0x2;
+    protected static final byte CMD_MOVE_CURSOR_LEFT = 0x10;
+    protected static final byte CMD_MOVE_CURSOR_RIGHT = 0x14;
+    protected static final byte CMD_SHIFT_LEFT = 0x18;
+    protected static final byte CMD_SHIFT_RIGHT = 0x1C;
     protected static final byte MASK_SET_CURSOR = (byte) 0x80;
     protected DigitalWritable pinRS;
     protected DigitalWritable pinE;
@@ -16,6 +20,9 @@ public class SerialLCDDisplay implements LCDDisplay {
     protected DigitalWritable pinD5;
     protected DigitalWritable pinD6;
     protected DigitalWritable pinD7;
+    protected boolean stateDisplayOn = true;
+    protected boolean stateCursorOn = false;
+    protected boolean stateCursorBlinking = false;
 
     public SerialLCDDisplay(DigitalWritable rs,
             DigitalWritable e,
@@ -93,6 +100,124 @@ public class SerialLCDDisplay implements LCDDisplay {
     @Override
     public void setCursor(int row, int col) {
         this.sendCmd((byte) (MASK_SET_CURSOR | row << 6 | col));
+    }
+
+    /**
+     * Moves the cursor to the left by one position
+     */
+    @Override
+    public void moveCursorLeft() {
+        this.sendCmd(CMD_MOVE_CURSOR_LEFT);
+    }
+
+    /**
+     * Moves the cursor to the right by one position
+     */
+    @Override
+    public void moveCursorRight() {
+        this.sendCmd(CMD_MOVE_CURSOR_RIGHT);
+    }
+
+    /**
+     * Shifts left by one position
+     */
+    @Override
+    public void moveShiftLeft() {
+        this.sendCmd(CMD_SHIFT_LEFT);
+    }
+    
+    /**
+     * Shifts right by one position
+     */
+    @Override
+    public void moveShiftRight() {
+        this.sendCmd(CMD_SHIFT_RIGHT);
+    }
+    
+    /**
+     * Enables the display
+     */
+    @Override
+    public void displayOn() {
+        if (this.stateDisplayOn) {
+            return;
+        }
+        this.stateDisplayOn = true;
+        this.sendUpdateDisplayControl();
+    }
+    
+    /**
+     * Disables the display
+     */
+    @Override
+    public void displayOff() {
+        if (this.stateDisplayOn == false) {
+            return;
+        }
+        this.stateDisplayOn = false;
+        this.sendUpdateDisplayControl();
+    }
+    
+    /**
+     * Enables the visual cursor
+     */
+    @Override
+    public void cursorOn() {
+        if (this.stateCursorOn) {
+            return;
+        }
+        this.stateCursorOn = true;
+        this.sendUpdateDisplayControl();
+    }
+    
+    /**
+     * Disables the visual cursor
+     */
+    @Override
+    public void cursorOff() {
+        if (this.stateCursorOn == false) {
+            return;
+        }
+        this.stateCursorOn = false;
+        this.sendUpdateDisplayControl();
+    }
+    
+    /**
+     * Enables cursor blinking
+     */
+    @Override
+    public void cursorBlinkOn() {
+        if (this.stateCursorBlinking) {
+            return;
+        }
+        this.stateCursorBlinking = true;
+        this.sendUpdateDisplayControl();
+    }
+    
+    /**
+     * Disables cursor blinking
+     */
+    @Override
+    public void cursorBlinkOff() {
+        if (this.stateCursorBlinking == false) {
+            return;
+        }
+        this.stateCursorBlinking = false;
+        this.sendUpdateDisplayControl();
+    }
+    
+    protected void sendUpdateDisplayControl() {
+        byte cmd = 0x8;
+        if (this.stateDisplayOn) {
+            cmd = (byte)(cmd | 0x4);
+        }
+        if (this.stateCursorOn) {
+            cmd = (byte)(cmd | 0x2);
+        }
+        if (this.stateCursorBlinking) {
+            cmd = (byte)(cmd | 0x1);
+        }
+        this.sendCmd(cmd);
     }
     
     /**
